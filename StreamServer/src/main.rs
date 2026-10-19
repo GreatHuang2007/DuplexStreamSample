@@ -13,7 +13,9 @@ use pb::*;
 
 /// 服务端实现：每个连接一个独立的 Echo/Compute 处理逻辑
 #[derive(Default)]
-pub struct MyStreamService;
+pub struct MyStreamService {
+    token: String,
+}
 
 #[tonic::async_trait]
 impl StreamService for MyStreamService {
@@ -24,6 +26,18 @@ impl StreamService for MyStreamService {
         &self,
         request: Request<Streaming<StreamRequest>>,
     ) -> Result<Response<Self::DuplexStreamStream>, Status> {
+        if request
+            .metadata()
+            .get("authorization")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+            != self.token
+        {
+            Err(Status::permission_denied("Invalid auth token"))?;
+        }
+
         let peer = request
             .remote_addr()
             .map(|a| a.to_string())
@@ -137,7 +151,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("StreamService listening on {addr}");
 
     Server::builder()
-        .add_service(StreamServiceServer::new(MyStreamService))
+        .add_service(StreamServiceServer::new(MyStreamService {
+            token: "abc".to_string(),
+        }))
         .serve(addr)
         .await?;
 
