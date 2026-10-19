@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package streamcalls;
+
+service StreamService {
+  rpc DuplexStream(stream StreamRequest) returns (stream StreamResponse);
+}
+
+message StreamRequest {
+  uint64 req_id = 1;
+  oneof payload {
+    EchoRequest        echo = 10;
+    SlowComputeRequest slow_compute = 11;
+  }
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message SlowComputeRequest {
+  uint32 n = 1;
+}
+
+message StreamResponse {
+  uint64 req_id = 1;
+  oneof payload {
+    EchoResponse         echo = 10;
+    SlowComputeResponse  slow_compute = 11;
+    Notification         notification = 20;
+  }
+}
+
+message EchoResponse {
+  string message = 1;
+}
+
+message SlowComputeResponse {
+  uint64 result = 1;
+}
+
+message Notification {
+  string content = 1;
+}
